@@ -5,7 +5,7 @@ type Initializer<T> = (resolve: Resolve<T>, reject: Reject) => void;
 type AnyFunction = (...args: any[]) => void;
 type Resolve<T> = (value: T) => void;
 type Reject = (reason?: any) => void;
-type Status = 'fulfilled' | 'resolved' | 'pending';
+type Status = 'fulfilled' | 'rejected' | 'pending';
 
 // Custom promise
 class MyPromise<T> {
@@ -42,6 +42,9 @@ class MyPromise<T> {
 		// this.thenCbs?.forEach((cb) => cb(value));
 	};
 	private reject = (reason?: any) => {
+		this.status = 'rejected';
+
+		this.processNextTasks();
 		// this.catchCbs?.forEach((cb) => cb(reason));
 	};
 }
@@ -90,35 +93,4 @@ const promise3 = customPromise.then((value) => {
 });
 const promise4 = customPromise.then((val) => {
 	console.log('test val 4:', val);
-})
-
-interface Salary {
-	amount: number;
-	currency: string;
-}
-const bigObj: {salary: Salary} = {
-	salary: {
-		amount: 3000,
-		currency: "euro"
-	}
-}
-
-function returnSomething(el: number = 1) {
-	let something = el;
-
-	return function (num: number = 10) {
-		const result = num + something;
-		console.log(result)
-		return `Here is what we got: ${result}`
-	}
-}
-
-const funcThatReturnSomething = returnSomething(100);
-
-console.log(funcThatReturnSomething(50));
-console.log(funcThatReturnSomething(100));
-console.log(funcThatReturnSomething(300));
-
-console.log(bigObj);
-
-
+});
