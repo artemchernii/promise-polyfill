@@ -12,16 +12,19 @@ class MyPromise<T> {
 	thenCbs: [AnyFunction, Resolve<T>][] = [];
 	catchCbs: [AnyFunction, Reject][] = [];
 	status: Status = 'pending';
+	value: T | null = null;
+	error?: any;
+
 	constructor(initializer: Initializer<T>) {
 		initializer(this.resolve, this.reject);
 	}
 	then = (thenCb: (value: T) => void) => {
-		return new MyPromise((resolve, reject) => {
+		return new MyPromise((resolve, _reject) => {
 			this.thenCbs.push([thenCb, resolve]);
 		});
 	};
 	catch = (catchCb: (reason?: any) => void) => {
-		return new MyPromise((resolve, reject) => {
+		return new MyPromise((_resolve, reject) => {
 			this.catchCbs.push([catchCb, reject]);
 		});
 	};
@@ -30,42 +33,41 @@ class MyPromise<T> {
 			return;
 		}
 		if (this.status === 'fulfilled') {
+			const thenCbs = this.thenCbs;
+			this.thenCbs = [];
+
+			thenCbs.forEach(([thenCb, resolve]) => {
+				const value = thenCb(this.value);
+				console.log(value);
+				// @ts-expect-error
+				resolve(value);
+			});
+			// success
 		} else {
 			//rejected
+			const catchCbs = this.catchCbs;
+			this.catchCbs = [];
+
+			catchCbs.forEach(([catchCb, reject]) => {
+				const error = catchCb(this.error);
+				reject(error);
+			});
 		}
 	};
 
 	private resolve = (value?: T) => {
 		this.status = 'fulfilled';
+		this.value = value ?? null;
 
 		this.processNextTasks();
-		// this.thenCbs?.forEach((cb) => cb(value));
 	};
 	private reject = (reason?: any) => {
 		this.status = 'rejected';
+		this.error = reason;
 
 		this.processNextTasks();
-		// this.catchCbs?.forEach((cb) => cb(reason));
 	};
 }
-
-// Simple promise generator
-const genPromise = (): Promise<number> => {
-	return new Promise((resolve, _reject) => {
-		resolve(5);
-	});
-};
-
-// const promise: Promise<number> = genPromise();
-// promise
-// 	.then((value) => {
-// 		console.log(value);
-// 		return sleep(5000);
-// 	})
-// 	.then(() => console.log('22222222222'))
-// 	.catch((error) => {
-// 		console.log(error);
-// 	});
 
 const sleep = (ms: number) => {
 	return new Promise<void>((resolve) => {
@@ -82,15 +84,18 @@ const customPromise: MyPromise<string> = new MyPromise((resolve, reject) => {
 	}, 1000);
 });
 
-const promise2 = customPromise.then((value) => {
-	console.log('promise 2:', value);
-	console.log('----------2---------');
-});
+console.log('custom promise ', customPromise);
+// console.log('before fromise');
+// const promise2 = customPromise.then((value) => {
+// 	console.log('promise 2:', value);
+// 	console.log('----------2---------');
+// });
 
-const promise3 = customPromise.then((value) => {
-	console.log('promise 3:', value);
-	console.log('----------3---------');
-});
-const promise4 = customPromise.then((val) => {
-	console.log('test val 4:', val);
-});
+// const promise3 = customPromise.then((value) => {
+// 	console.log('promise 3:', value);
+// 	console.log('----------3---------');
+// 	return 'promise 3 is lit';
+// });
+// const promise4 = promise3.then((val) => {
+// 	console.log('test val 4:', val);
+// });
