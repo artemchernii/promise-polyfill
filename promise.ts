@@ -12,16 +12,18 @@ class MyPromise<T> {
 	thenCbs: [AnyFunction, Resolve<T>][] = [];
 	catchCbs: [AnyFunction, Reject][] = [];
 	status: Status = 'pending';
+	value: T | null = null;
+	error?: any;
 	constructor(initializer: Initializer<T>) {
 		initializer(this.resolve, this.reject);
 	}
 	then = (thenCb: (value: T) => void) => {
-		return new MyPromise((resolve, reject) => {
+		return new MyPromise((resolve, _reject) => {
 			this.thenCbs.push([thenCb, resolve]);
 		});
 	};
 	catch = (catchCb: (reason?: any) => void) => {
-		return new MyPromise((resolve, reject) => {
+		return new MyPromise((_resolve, reject) => {
 			this.catchCbs.push([catchCb, reject]);
 		});
 	};
@@ -30,6 +32,14 @@ class MyPromise<T> {
 			return;
 		}
 		if (this.status === 'fulfilled') {
+			const thenCbs = this.thenCbs;
+			this.thenCbs = [];
+
+			thenCbs.forEach(([thenCb, resolve]) => {
+				const value = thenCb();
+				resolve(value);
+			});
+			// success
 		} else {
 			//rejected
 		}
@@ -49,24 +59,6 @@ class MyPromise<T> {
 	};
 }
 
-// Simple promise generator
-const genPromise = (): Promise<number> => {
-	return new Promise((resolve, _reject) => {
-		resolve(5);
-	});
-};
-
-// const promise: Promise<number> = genPromise();
-// promise
-// 	.then((value) => {
-// 		console.log(value);
-// 		return sleep(5000);
-// 	})
-// 	.then(() => console.log('22222222222'))
-// 	.catch((error) => {
-// 		console.log(error);
-// 	});
-
 const sleep = (ms: number) => {
 	return new Promise<void>((resolve) => {
 		setTimeout(() => {
@@ -81,7 +73,7 @@ const customPromise: MyPromise<string> = new MyPromise((resolve, reject) => {
 		resolve('My original promise');
 	}, 1000);
 });
-
+console.log('before fromise');
 const promise2 = customPromise.then((value) => {
 	console.log('promise 2:', value);
 	console.log('----------2---------');
