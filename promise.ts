@@ -14,6 +14,7 @@ class MyPromise<T> {
 	status: Status = 'pending';
 	value: T | null = null;
 	error?: any;
+
 	constructor(initializer: Initializer<T>) {
 		initializer(this.resolve, this.reject);
 	}
@@ -36,26 +37,35 @@ class MyPromise<T> {
 			this.thenCbs = [];
 
 			thenCbs.forEach(([thenCb, resolve]) => {
-				const value = thenCb();
+				const value = thenCb(this.value);
+				console.log(value);
+				// @ts-expect-error
 				resolve(value);
 			});
 			// success
 		} else {
 			//rejected
+			const catchCbs = this.catchCbs;
+			this.catchCbs = [];
+
+			catchCbs.forEach(([catchCb, reject]) => {
+				const error = catchCb(this.error);
+				reject(error);
+			});
 		}
 	};
 
 	private resolve = (value?: T) => {
 		this.status = 'fulfilled';
+		this.value = value ?? null;
 
 		this.processNextTasks();
-		// this.thenCbs?.forEach((cb) => cb(value));
 	};
 	private reject = (reason?: any) => {
 		this.status = 'rejected';
+		this.error = reason;
 
 		this.processNextTasks();
-		// this.catchCbs?.forEach((cb) => cb(reason));
 	};
 }
 
@@ -73,16 +83,19 @@ const customPromise: MyPromise<string> = new MyPromise((resolve, reject) => {
 		resolve('My original promise');
 	}, 1000);
 });
-console.log('before fromise');
-const promise2 = customPromise.then((value) => {
-	console.log('promise 2:', value);
-	console.log('----------2---------');
-});
 
-const promise3 = customPromise.then((value) => {
-	console.log('promise 3:', value);
-	console.log('----------3---------');
-});
-const promise4 = customPromise.then((val) => {
-	console.log('test val 4:', val);
-});
+console.log('custom promise ', customPromise);
+// console.log('before fromise');
+// const promise2 = customPromise.then((value) => {
+// 	console.log('promise 2:', value);
+// 	console.log('----------2---------');
+// });
+
+// const promise3 = customPromise.then((value) => {
+// 	console.log('promise 3:', value);
+// 	console.log('----------3---------');
+// 	return 'promise 3 is lit';
+// });
+// const promise4 = promise3.then((val) => {
+// 	console.log('test val 4:', val);
+// });
